@@ -117,7 +117,7 @@ export default function About() {
           </div>
           <div className="lg:pl-20">
             <ul role="list">
-              <SocialLink
+              {/* <SocialLink
                 href="https://facebook.com/in/barbara-chanakira"
                 icon={FaFacebookF}
                 className="mt-4"
@@ -130,7 +130,7 @@ export default function About() {
                 className="mt-4"
               >
                 Follow on Twitter
-              </SocialLink>
+              </SocialLink> */}
              <SocialLink href="mailto:barbara@zamspace.com" icon={MailIcon} className="mt-4">
                 barbara@zamspace.com
               </SocialLink>
@@ -183,7 +183,7 @@ export default function About() {
           </div>
           <div className="lg:pr-20">
             <ul role="list">
-              <SocialLink
+              {/* <SocialLink
                 href="https://facebook.com/in/tinga-koloko"
                 icon={FaFacebookF}
                 className="mt-4"
@@ -196,7 +196,7 @@ export default function About() {
                 className="mt-4"
               >
                 Follow on Twitter
-              </SocialLink>
+              </SocialLink> */}
               <SocialLink href="mailto:tinga@zamspace.com" icon={MailIcon} className="mt-4">
                 tinga@zamspace.com
               </SocialLink>
