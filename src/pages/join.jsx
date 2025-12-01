@@ -133,9 +133,8 @@ export default function JoinWaitingList() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
 
-  // Replace these with your actual EmailJS credentials
-  const EMAILJS_SERVICE_ID = 'service_vlyds9h'; // Replace with your service ID
-  const EMAILJS_TEMPLATE_ID = 'template_uh6ue7h'; // Replace with your template ID
+  const EMAILJS_SERVICE_ID = 'service_vlyds9h'; 
+  const EMAILJS_TEMPLATE_ID = 'template_uh6ue7h'; 
   const EMAILJS_PUBLIC_KEY = 'YE9AigopY0l4Anjo7'; 
 
   const handleChange = (e) => {
