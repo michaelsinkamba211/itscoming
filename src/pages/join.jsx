@@ -575,7 +575,7 @@ export default function JoinWaitingList() {
 
             {/* Privacy Note */}
             <p className="text-xs text-zinc-500 text-center">
-              By joining, you agree to be notified when ZamSpace launches. We respect your privacy and will not share your information.
+              By joining, you agree to be notified when ZamSpace launches. We respect your privacy and will not share your information
             </p>
           </form>
         </div>
