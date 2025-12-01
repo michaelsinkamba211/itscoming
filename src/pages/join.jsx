@@ -145,102 +145,109 @@ export default function JoinWaitingList() {
 
   const waitingListTypes = [
     {
-      name: 'Property Buyers & Tenants',
-      description: 'Find your perfect property with verified listings. Save searches, create wishlists, and get matched with properties that meet your criteria.',
+      name: 'Buyers & Tenants',
+      description:
+        'Find homes you can trust. ZamSpace connects you to verified listings, real landlords, and properties that match what you’re looking for — without the guesswork.',
       link: {
         href: '#buyer-form',
         label: '',
       },
       type: 'buyer',
       features: [
-        'Verified property listings',
-        'Save searches & properties',
-        'Personalized wishlists',
-        'Direct landlord connections'
+        'Browse verified property listings',
+        'Save searches and favorite properties',
+        'Create personalised wishlists',
+        'Connect directly with landlords',
       ],
       icon: UserGroupIcon,
     },
     {
-      name: 'Property Sellers & Landlords',
-      description: 'List your properties for sale or rent. Reach qualified buyers and tenants with verified profiles and secure transactions.',
+      name: 'Sellers & Landlords',
+      description:
+        'List your property with confidence and reach serious buyers and tenants. ZamSpace helps you showcase your listings and connect with ready-to-move clients.',
       link: {
         href: '#seller-form',
         label: '',
       },
       type: 'seller',
       features: [
-        'Create property listings',
-        'Company profile showcase',
-        'Specialization tags',
-        'Rating & review system'
+        'Create and manage property listings',
+        'Build a trusted seller or landlord profile',
+        'Highlight property types and specialisation',
+        'Earn ratings and reviews to build credibility',
       ],
       icon: BuildingOfficeIcon,
     },
     {
       name: 'Real Estate Agents',
-      description: 'Join as a licensed agent to represent properties. Showcase your agency, specializations, and connect with clients.',
+      description:
+        'Join as a verified agent and grow your business on a trusted platform. Showcase your agency, expertise, and connect with clients actively searching for property or seeking your services.',
       link: {
         href: '#agent-form',
         label: '',
       },
       type: 'agent',
       features: [
-        'Agency profile',
-        'Business license verification',
-        'Multiple specializations',
-        'Professional network'
+        'Create a professional agency profile',
+        'Verify your business',
+        'Promote multiple specialisations',
+        'Network with clients and partners',
       ],
       icon: ShieldCheckIcon,
     },
     {
-      name: 'Service Providers',
-      description: 'Offer professional services like architecture, contracting, or legal support. Get verified and connect with property owners.',
+      name: 'Property Service Providers',
+      description:
+        'From architects, legal professionals to surveyors, ZamSpace connects verified service providers with property owners who need skilled, trusted support.',
       link: {
         href: '#provider-form',
         label: '',
       },
       type: 'service_provider',
       features: [
-        'Professional profile',
-        'License verification',
-        'Experience showcase',
-        'Service categorization'
+        'Create a verified professional profile',
+        'Showcase experience and past work',
+        'Get discovered by property owners and customers',
+        'Offer services under clear categories',
       ],
       icon: DevicePhoneMobileIcon,
     },
     {
       name: 'Building Material Suppliers',
-      description: 'List your construction materials and products. Connect with contractors, builders, and DIY homeowners.',
+      description:
+        'Promote your construction materials and products to the right audience — contractors, developers, and homeowners ready to build.',
       link: {
         href: '#supplier-form',
         label: '',
       },
       type: 'supplier',
       features: [
-        'Product catalog',
-        'Business verification',
-        'Location-based services',
-        'Multiple service offerings'
+        'List products and materials',
+        'Verify your business',
+        'Offer location-based services',
+        'Showcase multiple product lines',
       ],
       icon: TruckIcon,
     },
     {
       name: 'Contractors & Builders',
-      description: 'Showcase your contracting services. Get matched with property owners needing construction, renovation, or repair work.',
+      description:
+        'Win more projects by showcasing your expertise where property owners are already looking.',
       link: {
         href: '#contractor-form',
         label: '',
       },
       type: 'contractor',
       features: [
-        'Service portfolio',
-        'Specialization areas',
-        'Project gallery',
-        'Client reviews'
+        'Display your services and specialisation',
+        'Share completed projects and galleries',
+        'Get client reviews and ratings',
+        'Connect with property owners and developers',
       ],
       icon: WrenchIcon,
     },
   ]
+
 
   return (
     <>
@@ -254,7 +261,7 @@ export default function JoinWaitingList() {
       <SimpleLayout
         title="Join the ZamSpace Waiting List"
         intro="Be among the first to experience Zambia's trusted property ecosystem. Get early access, exclusive offers, and verified status before our public launch."
-          titleClassName="!text-green-900"
+        titleClassName="!text-green-900"
       >
         {/* Waiting List Options */}
         <ul

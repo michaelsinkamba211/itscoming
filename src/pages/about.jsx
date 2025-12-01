@@ -49,6 +49,20 @@ function PhoneIcon(props) {
   )
 }
 
+export function MailIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        d="M3 6.75h18M3 6.75v10.5c0 .414.336.75.75.75h16.5a.75.75 0 0 0 .75-.75V6.75M3 6.75l9 6 9-6"
+      />
+    </svg>
+  )
+}
+
+
 export default function About() {
   return (
     <>
@@ -76,7 +90,7 @@ export default function About() {
               <Image
                 src="/images/barbara.jpg"
                 width={400}
-                height= {450}
+                height={450}
                 alt="Barbara Chanakira"
                 sizes="(min-width: 1024px) 32rem, 20rem"
                 className="aspect-square rotate-2 rounded-2xl bg-zinc-100 object-cover"
@@ -126,9 +140,10 @@ export default function About() {
               >
                 Follow on Twitter
               </SocialLink>
-              <SocialLink href="tel:+447932780711" icon={PhoneIcon} className="mt-4">
-                +44 7932780711
+             <SocialLink href="mailto:barbara@zamspace.com" icon={MailIcon} className="mt-4">
+                barbara@zamspace.com
               </SocialLink>
+
             </ul>
           </div>
         </div>
@@ -142,7 +157,7 @@ export default function About() {
                 alt="Tinga Koloko"
                 sizes="(min-width: 1024px) 32rem, 20rem"
                 width={400}
-                height= {450}
+                height={450}
                 className="aspect-square -rotate-1 rounded-2xl bg-zinc-100 object-cover"
               />
             </div>
@@ -191,8 +206,8 @@ export default function About() {
               >
                 Follow on Twitter
               </SocialLink>
-              <SocialLink href="tel:+260971234567" icon={PhoneIcon} className="mt-4">
-                +260 767652446
+              <SocialLink href="mailto:tinga@zamspace.com" icon={MailIcon} className="mt-4">
+                tinga@zamspace.com
               </SocialLink>
             </ul>
           </div>
