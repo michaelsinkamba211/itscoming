@@ -351,7 +351,7 @@ export default function JoinWaitingList() {
                     className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
                   />
                   <span className="ml-2 text-sm text-zinc-700">
-                    xTenant/Buyer/Property Seeker
+                    Tenant/Buyer/Property Seeker
                   </span>
                 </label>
                 <label className="flex items-center">
