@@ -274,13 +274,13 @@ export default function Home({ articles }) {
           </p>
           <div className="mt-6 mb-10 flex gap-6">
             <SocialLink
-              href="https://www.tiktok.com/@zamspace"
+              href="https://www.tiktok.com/@zam_space?_r=1&_t=ZM-91rSzWQaTnc"
               aria-label="Follow on TikTok"
               icon={FaTiktok}
               className="h-8 w-8"
             />
             <SocialLink
-              href="https://facebook.com/zamspace"
+              href="https://www.facebook.com/share/17EERnwRpC/?mibextid=wwXIfr"
               aria-label="Follow on Facebook"
               icon={FaFacebookF}
               className="h-8 w-8"
