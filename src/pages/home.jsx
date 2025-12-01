@@ -3,6 +3,8 @@ import Head from 'next/head'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { Popover } from '@headlessui/react'
+import { useState } from 'react'
+import emailjs from '@emailjs/browser'
 
 import { Card } from '@/components/Card'
 import { Container } from '@/components/Container'
@@ -10,7 +12,6 @@ import { FaFacebookF } from "react-icons/fa";
 import { FaTiktok } from "react-icons/fa";
 import { CiLinkedin } from "react-icons/ci";
 import { FiInstagram } from "react-icons/fi";
-
 
 // import image1 from '@/images/photos/image1.jpg'
 // import image2 from '@/images/photos/image2.jpg'
@@ -112,108 +113,282 @@ function SocialLink({ icon: Icon, ...props }) {
   )
 }
 
-function Resume() {
+function FormIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path
+        d="M2.75 7.75a3 3 0 0 1 3-3h12.5a3 3 0 0 1 3 3v8.5a3 3 0 0 1-3 3H5.75a3 3 0 0 1-3-3v-8.5Z"
+        className="fill-zinc-100 stroke-zinc-400"
+      />
+      <path
+        d="m4 6 6.024 5.479a2.915 2.915 0 0 0 3.952 0L20 6"
+        className="stroke-zinc-400"
+      />
+    </svg>
+  )
+}
+
+function WaitingListForm() {
+  const [formData, setFormData] = useState({
+    email: '',
+    phone: '',
+    userType: 'individual',
+    message: ''
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
+
+  // Replace these with your actual EmailJS credentials
+  const EMAILJS_SERVICE_ID = 'service_vlyds9h'; // Replace with your service ID
+  const EMAILJS_TEMPLATE_ID = 'template_uh6ue7h'; // Replace with your template ID
+  const EMAILJS_PUBLIC_KEY = 'YE9AigopY0l4Anjo7'; // Replace with your public key
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'radio') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus({ type: '', message: '' });
+
+    try {
+      // Validate email
+      if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      // Prepare template parameters
+      const templateParams = {
+        to_email: 'your-receiving-email@example.com', // Email to receive submissions
+        from_name: 'ZamSpace Waiting List',
+        email: formData.email,
+        phone: formData.phone || 'Not provided',
+        user_type: getFormattedUserType(formData.userType),
+        message: formData.message || 'No message provided',
+        timestamp: new Date().toLocaleString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZoneName: 'short'
+        }),
+      };
+
+      // Send email using EmailJS
+      const response = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      if (response.status === 200) {
+        // Reset form on success
+        setFormData({
+          email: '',
+          phone: '',
+          userType: 'individual',
+          message: ''
+        });
+        
+        setSubmitStatus({
+          type: 'success',
+          message: 'Successfully joined the waiting list! We\'ll notify you when we launch.'
+        });
+        
+        // Optional: Log submission to console
+        console.log('Form submitted successfully:', templateParams);
+      }
+    } catch (error) {
+      console.error('EmailJS Error:', error);
+      setSubmitStatus({
+        type: 'error',
+        message: error.text || 'Failed to submit. Please try again or contact support.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getFormattedUserType = (type) => {
+    switch(type) {
+      case 'individual':
+        return 'Tenant/Buyer/Property Seeker';
+      case 'professional':
+        return 'Landlord/Agent/Service Provider';
+      case 'provider':
+        return 'Contractor/Supplier/Professional Service';
+      default:
+        return type;
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-zinc-100 p-6">
       <h2 className="flex text-sm font-semibold text-zinc-900">
-        <BriefcaseIcon className="h-6 w-6 flex-none" />
-        <span className="ml-3">Join the Waiting List</span>
+        <FormIcon className="h-6 w-6 flex-none" />
+        <span className="ml-3">Join Our Exclusive Waiting List</span>
       </h2>
 
-      {/* Waiting List Form */}
-      <div className="mt-6">
-        <form className="space-y-4">
-          <div className='flex w-full gap-3'>
-            {/* Email Field */}
-            <div className='w-full'>
-              <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
-                Email Address *
-              </label>
+      {/* Status Message */}
+      {submitStatus.message && (
+        <div className={`mt-4 p-3 rounded-md text-sm ${submitStatus.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+          {submitStatus.message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        {/* Email Field */}
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
+            Email Address *
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            placeholder="your.email@example.com"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        {/* Phone Field */}
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-zinc-700">
+            Phone Number
+          </label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            placeholder="+260 XXX XXX XXX"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        {/* User Type Selection */}
+        <div>
+          <label className="block text-sm font-medium text-zinc-700">
+            I am a *
+          </label>
+          <div className="mt-2 space-y-2">
+            <label className="flex items-center">
               <input
-                type="email"
-                id="email"
-                name="email"
-                required
-                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-800 focus:outline-none focus:ring-1 focus:ring-green-800"
-                placeholder="your.email@example.com"
+                type="radio"
+                name="userType"
+                value="individual"
+                checked={formData.userType === 'individual'}
+                onChange={handleChange}
+                className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                disabled={isSubmitting}
               />
-            </div>
-
-            {/* Phone Field */}
-            <div className='w-full'>
-              <label htmlFor="phone" className="block text-sm font-medium text-zinc-700">
-                Phone Number
-              </label>
+              <span className="ml-2 text-sm text-zinc-700">
+                🏠 Tenant/Buyer/Property Seeker
+              </span>
+            </label>
+            <label className="flex items-center">
               <input
-                type="tel"
-                id="phone"
-                name="phone"
-                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-800 focus:outline-none focus:ring-1 focus:ring-green-800"
-                placeholder="+260 XXX XXX XXX"
+                type="radio"
+                name="userType"
+                value="professional"
+                checked={formData.userType === 'professional'}
+                onChange={handleChange}
+                className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                disabled={isSubmitting}
               />
-            </div>
-          </div>
-
-          {/* User Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-700">
-              I am a *
+              <span className="ml-2 text-sm text-zinc-700">
+                💼 Landlord/Agent/Service Provider
+              </span>
             </label>
-            <div className="mt-2 space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="userType"
-                  value="individual"
-                  className="h-4 w-4 border-zinc-300 text-green-900 focus:ring-green-800"
-                  defaultChecked
-                />
-                <span className="ml-2 text-sm text-zinc-700">
-                  🏠 Tenant/Buyer/Property Seeker
-                </span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="userType"
-                  value="professional"
-                  className="h-4 w-4 border-zinc-300 text-green-900 focus:ring-green-800"
-                />
-                <span className="ml-2 text-sm text-zinc-700">
-                  💼 Landlord/Agent/Service Provider
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Message Field */}
-          <div>
-            <label htmlFor="message" className="block text-sm font-medium text-zinc-700">
-              What are you looking for?
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="userType"
+                value="provider"
+                checked={formData.userType === 'provider'}
+                onChange={handleChange}
+                className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                disabled={isSubmitting}
+              />
+              <span className="ml-2 text-sm text-zinc-700">
+                🔨 Contractor/Supplier/Professional Service
+              </span>
             </label>
-            <textarea
-              id="message"
-              name="message"
-              rows={3}
-              className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-800 focus:outline-none focus:ring-1 focus:ring-green-800"
-              placeholder="Tell us about your property needs, services required, or what you're offering..."
-            />
           </div>
+        </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="w-full rounded-md bg-green-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-800 focus:ring-offset-2"
-          >
-            Join Waiting List
-          </button>
+        {/* Message Field */}
+        <div>
+          <label htmlFor="message" className="block text-sm font-medium text-zinc-700">
+            What are you looking for or offering?
+          </label>
+          <textarea
+            id="message"
+            name="message"
+            rows={3}
+            value={formData.message}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            placeholder="Tell us about your property needs, services required, or what you're offering..."
+            disabled={isSubmitting}
+          />
+        </div>
 
-          {/* Privacy Note */}
-          <p className="text-xs text-zinc-500">
-            By joining, you agree to be notified when ZamSpace launches. We respect your privacy and will not share your information.
-          </p>
-        </form>
-      </div>
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Submitting...
+            </span>
+          ) : (
+            'Join Waiting List'
+          )}
+        </button>
+
+        {/* Privacy Note */}
+        <p className="text-xs text-zinc-500 text-center">
+          By joining, you agree to be notified when ZamSpace launches. We respect your privacy and will not share your information.
+        </p>
+      </form>
     </div>
   )
 }
@@ -323,7 +498,7 @@ export default function Home({ articles }) {
       <Container className="mt-24 md:mt-28">
         <div className="mx-auto grid max-w-xl grid-cols-1 gap-y-20 lg:max-w-none">
           <div className="space-y-10 lg:pl-16 xl:pl-24">
-            <Resume />
+            <WaitingListForm />
           </div>
         </div>
       </Container>

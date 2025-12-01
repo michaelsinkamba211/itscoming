@@ -1,5 +1,6 @@
 import Head from 'next/head'
 import { useState } from 'react'
+import emailjs from '@emailjs/browser'
 
 import { Card } from '@/components/Card'
 import { SimpleLayout } from '@/components/SimpleLayout'
@@ -129,25 +130,120 @@ export default function JoinWaitingList() {
     serviceType: ''
   })
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // Handle form submission here
-    console.log('Form submitted:', formData)
-    // You can add your API call here
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
+
+  // Replace these with your actual EmailJS credentials
+  const EMAILJS_SERVICE_ID = 'service_vlyds9h'; // Replace with your service ID
+  const EMAILJS_TEMPLATE_ID = 'template_uh6ue7h'; // Replace with your template ID
+  const EMAILJS_PUBLIC_KEY = 'YE9AigopY0l4Anjo7'; 
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+    const { name, value, type } = e.target;
+    
+    if (type === 'radio') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus({ type: '', message: '' });
+
+    try {
+      // Validate email
+      if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      // Prepare template parameters
+      const templateParams = {
+        to_email: 'your-receiving-email@example.com', // Email to receive submissions
+        from_name: 'ZamSpace Waiting List',
+        email: formData.email,
+        phone: formData.phone || 'Not provided',
+        user_type: getFormattedUserType(formData.userType),
+        message: formData.message || 'No message provided',
+        company: formData.company || 'Not provided',
+        service_type: formData.serviceType || 'Not specified',
+        page_source: 'Join Waiting List Page',
+        timestamp: new Date().toLocaleString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZoneName: 'short'
+        }),
+      };
+
+      // Send email using EmailJS
+      const response = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+
+      if (response.status === 200) {
+        // Reset form on success
+        setFormData({
+          email: '',
+          phone: '',
+          userType: 'individual',
+          message: '',
+          company: '',
+          serviceType: ''
+        });
+        
+        setSubmitStatus({
+          type: 'success',
+          message: 'Successfully joined the waiting list! We\'ll notify you when we launch.'
+        });
+        
+        // Optional: Log submission to console
+        console.log('Form submitted successfully from waiting list page:', templateParams);
+      }
+    } catch (error) {
+      console.error('EmailJS Error:', error);
+      setSubmitStatus({
+        type: 'error',
+        message: error.text || 'Failed to submit. Please try again or contact support.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getFormattedUserType = (type) => {
+    switch(type) {
+      case 'individual':
+        return 'Tenant/Buyer/Property Seeker';
+      case 'professional':
+        return 'Landlord/Agent/Service Provider';
+      case 'provider':
+        return 'Contractor/Supplier/Professional Service';
+      default:
+        return type;
+    }
+  };
 
   const waitingListTypes = [
     {
       name: 'Buyers & Tenants',
       description:
-        'Find homes you can trust. ZamSpace connects you to verified listings, real landlords, and properties that match what you’re looking for — without the guesswork.',
+        'Find homes you can trust. ZamSpace connects you to verified listings, real landlords, and properties that match what you\'re looking for — without the guesswork.',
       link: {
         href: '#buyer-form',
         label: '',
@@ -248,11 +344,10 @@ export default function JoinWaitingList() {
     },
   ]
 
-
   return (
     <>
       <Head>
-        <title >Join Waiting List - ZamSpace</title>
+        <title>Join Waiting List - ZamSpace</title>
         <meta
           name="description"
           content="Join the ZamSpace waiting list for early access to Zambia's trusted property ecosystem. Verified properties, services, and suppliers."
@@ -301,6 +396,13 @@ export default function JoinWaitingList() {
             <span className="ml-3">Join Our Exclusive Waiting List</span>
           </h2>
 
+          {/* Status Message */}
+          {submitStatus.message && (
+            <div className={`mt-4 p-3 rounded-md text-sm ${submitStatus.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+              {submitStatus.message}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             {/* Email Field */}
             <div>
@@ -316,6 +418,7 @@ export default function JoinWaitingList() {
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 placeholder="your.email@example.com"
+                disabled={isSubmitting}
               />
             </div>
 
@@ -332,6 +435,24 @@ export default function JoinWaitingList() {
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 placeholder="+260 XXX XXX XXX"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Company/Organization Field (Optional) */}
+            <div>
+              <label htmlFor="company" className="block text-sm font-medium text-zinc-700">
+                Company/Organization (Optional)
+              </label>
+              <input
+                type="text"
+                id="company"
+                name="company"
+                value={formData.company}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                placeholder="Your company name"
+                disabled={isSubmitting}
               />
             </div>
 
@@ -349,9 +470,10 @@ export default function JoinWaitingList() {
                     checked={formData.userType === 'individual'}
                     onChange={handleChange}
                     className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                    disabled={isSubmitting}
                   />
                   <span className="ml-2 text-sm text-zinc-700">
-                    Tenant/Buyer/Property Seeker
+                    🏠 Tenant/Buyer/Property Seeker
                   </span>
                 </label>
                 <label className="flex items-center">
@@ -362,9 +484,10 @@ export default function JoinWaitingList() {
                     checked={formData.userType === 'professional'}
                     onChange={handleChange}
                     className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                    disabled={isSubmitting}
                   />
                   <span className="ml-2 text-sm text-zinc-700">
-                    Landlord/Agent/Service Provider
+                    💼 Landlord/Agent/Service Provider
                   </span>
                 </label>
                 <label className="flex items-center">
@@ -375,13 +498,44 @@ export default function JoinWaitingList() {
                     checked={formData.userType === 'provider'}
                     onChange={handleChange}
                     className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                    disabled={isSubmitting}
                   />
                   <span className="ml-2 text-sm text-zinc-700">
-                    Contractor/Supplier/Professional Service
+                    🔨 Contractor/Supplier/Professional Service
                   </span>
                 </label>
               </div>
             </div>
+
+            {/* Service Type Selection (Conditional) */}
+            {(formData.userType === 'professional' || formData.userType === 'provider') && (
+              <div>
+                <label htmlFor="serviceType" className="block text-sm font-medium text-zinc-700">
+                  Primary Service/Category
+                </label>
+                <select
+                  id="serviceType"
+                  name="serviceType"
+                  value={formData.serviceType}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                  disabled={isSubmitting}
+                >
+                  <option value="">Select a category</option>
+                  <option value="real_estate_agent">Real Estate Agent</option>
+                  <option value="property_management">Property Management</option>
+                  <option value="legal_services">Legal Services</option>
+                  <option value="architecture">Architecture</option>
+                  <option value="construction">Construction</option>
+                  <option value="interior_design">Interior Design</option>
+                  <option value="surveying">Surveying</option>
+                  <option value="electrical">Electrical Services</option>
+                  <option value="plumbing">Plumbing Services</option>
+                  <option value="building_materials">Building Materials</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            )}
 
             {/* Message Field */}
             <div>
@@ -396,15 +550,27 @@ export default function JoinWaitingList() {
                 onChange={handleChange}
                 className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 placeholder="Tell us about your property needs, services required, or what you're offering..."
+                disabled={isSubmitting}
               />
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+              disabled={isSubmitting}
+              className="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Join Waiting List
+              {isSubmitting ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Submitting...
+                </span>
+              ) : (
+                'Join Waiting List'
+              )}
             </button>
 
             {/* Privacy Note */}
