@@ -8,6 +8,9 @@ import { Card } from '@/components/Card'
 import { Container } from '@/components/Container'
 import { FaFacebookF } from "react-icons/fa";
 import { FaTiktok } from "react-icons/fa";
+import { CiLinkedin } from "react-icons/ci";
+import { FiInstagram } from "react-icons/fi";
+
 
 // import image1 from '@/images/photos/image1.jpg'
 // import image2 from '@/images/photos/image2.jpg'
@@ -279,12 +282,31 @@ export default function Home({ articles }) {
               icon={FaTiktok}
               className="h-8 w-8"
             />
+
+
+            <SocialLink
+              href="https://www.instagram.com/zam.space_?igsh=MTRyNGs1N3dpODEwNA=="
+              icon={FiInstagram}
+              className="h-8 w-8"
+            >
+              Instagram
+            </SocialLink>
+
+            <SocialLink
+              href="https://www.linkedin.com/in/zamspace-zamspace-84a299397?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app"
+              icon={CiLinkedin}
+              className="h-8 w-8"
+            >
+              LinkedIn
+            </SocialLink>
+
             <SocialLink
               href="https://www.facebook.com/share/17EERnwRpC/?mibextid=wwXIfr"
               aria-label="Follow on Facebook"
               icon={FaFacebookF}
               className="h-8 w-8"
             />
+
           </div>
 
           <div className="mt-6 flex gap-6">
