@@ -267,10 +267,10 @@ export default function Home({ articles }) {
       <Container className="mt-9">
         <div className="max-w-3xl">
           <h1 className="text-4xl font-bold tracking-tight text-zinc-800 sm:text-5xl">
-            Property. Services. Suppliers. <span className="text-green-900">Verified.</span>
+            Your Trusted Property Ecosystem. <span className="text-green-900">— Verified..</span>
           </h1>
           <p className="mt-6 text-base text-zinc-600">
-            ZamSpace is Zambia&apos;s trusted property ecosystem connecting tenants, buyers, landlords, and sellers with verified professionals. We&apos;re building a smarter, smoother way to rent, buy, sell, and build—bringing transparency and reliability to Zambia&apos;s property market.
+            ZamSpace is Zambia&apos;s  modern property ecosystem, bringing together tenants, buyers, landlords, sellers, and verified professionals on one trusted platform.. We&apos;re building a seamless way to rent, buy, sell, and build making property transactions simpler, safer, and more transparent across Zambia.
           </p>
           <div className="mt-6 mb-10 flex gap-6">
             <SocialLink
