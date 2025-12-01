@@ -1,0 +1,412 @@
+import Head from 'next/head'
+import { useState } from 'react'
+
+import { Card } from '@/components/Card'
+import { SimpleLayout } from '@/components/SimpleLayout'
+
+// Icon Components
+function UserGroupIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z"
+        clipRule="evenodd"
+      />
+      <path d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z" />
+    </svg>
+  )
+}
+
+function BuildingOfficeIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M4.5 2.25a.75.75 0 0 0 0 1.5v16.5h-.75a.75.75 0 0 0 0 1.5h16.5a.75.75 0 0 0 0-1.5h-.75V3.75a.75.75 0 0 0 0-1.5h-15ZM9 6a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5H9Zm-.75 3.75A.75.75 0 0 1 9 9h1.5a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75ZM9 12a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5H9Zm3.75-5.25A.75.75 0 0 1 13.5 6H15a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75ZM13.5 9a.75.75 0 0 0 0 1.5H15A.75.75 0 0 0 15 9h-1.5Zm-.75 3.75a.75.75 0 0 1 .75-.75H15a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75ZM9 19.5v-2.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-.75.75h-4.5A.75.75 0 0 1 9 19.5Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+function ShieldCheckIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M12.516 2.17a.75.75 0 0 0-1.032 0 11.209 11.209 0 0 1-7.877 3.08.75.75 0 0 0-.722.515A12.74 12.74 0 0 0 2.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 0 0 .374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 0 0-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08Zm3.094 8.016a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+function DevicePhoneMobileIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M5.625 1.5H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875ZM6.75 15a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1-.75-.75Z"
+        clipRule="evenodd"
+      />
+      <path d="M8.25 19.5a1.5 1.5 0 0 1-1.5-1.5H6A3 3 0 0 0 9 21h3a3 3 0 0 0 3-3h-.75a1.5 1.5 0 0 1-1.5 1.5h-3Z" />
+    </svg>
+  )
+}
+
+function CheckIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        d="M9.307 12.248a.75.75 0 1 0-1.114 1.004l1.114-1.004ZM11 15.25l-.557.502a.75.75 0 0 0 1.15-.043L11 15.25Zm4.844-5.041a.75.75 0 0 0-1.188-.918l1.188.918Zm-7.651 3.043 2.25 2.5 1.114-1.004-2.25-2.5-1.114 1.004Zm3.364 2.457 4.25-5.5-1.187-.918-4.25 5.5 1.188.918Z"
+        fill="currentColor"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="8.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function FormIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625ZM7.5 15a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5A.75.75 0 0 1 7.5 15Zm.75 2.25a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H8.25Z"
+        clipRule="evenodd"
+      />
+      <path d="M12.971 1.816A5.23 5.23 0 0 1 14.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 0 1 3.434 1.279 9.768 9.768 0 0 0-6.963-6.963Z" />
+    </svg>
+  )
+}
+
+function TruckIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M1.5 5.25a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25V15a2.25 2.25 0 0 1-2.25 2.25h-13.5A2.25 2.25 0 0 1 1.5 15V5.25Zm2.25-.75a.75.75 0 0 0-.75.75v9.75c0 .414.336.75.75.75h13.5a.75.75 0 0 0 .75-.75V5.25a.75.75 0 0 0-.75-.75H3.75Z"
+        clipRule="evenodd"
+      />
+      <path d="M5.25 12a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5H6a.75.75 0 0 1-.75-.75Zm0 3a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H6a.75.75 0 0 1-.75-.75Z" />
+      <path
+        fillRule="evenodd"
+        d="M17.625 17.25a1.125 1.125 0 1 0 0-2.25 1.125 1.125 0 0 0 0 2.25Zm0 1.5a2.625 2.625 0 1 0 0-5.25 2.625 2.625 0 0 0 0 5.25Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+function WrenchIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path
+        fillRule="evenodd"
+        d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75ZM4.117 19.125a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75v-.008Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  )
+}
+
+export default function JoinWaitingList() {
+  const [formData, setFormData] = useState({
+    email: '',
+    phone: '',
+    userType: 'individual',
+    message: '',
+    company: '',
+    serviceType: ''
+  })
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    // Handle form submission here
+    console.log('Form submitted:', formData)
+    // You can add your API call here
+  }
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const waitingListTypes = [
+    {
+      name: 'Property Buyers & Tenants',
+      description: 'Find your perfect property with verified listings. Save searches, create wishlists, and get matched with properties that meet your criteria.',
+      link: {
+        href: '#buyer-form',
+        label: '',
+      },
+      type: 'buyer',
+      features: [
+        'Verified property listings',
+        'Save searches & properties',
+        'Personalized wishlists',
+        'Direct landlord connections'
+      ],
+      icon: UserGroupIcon,
+    },
+    {
+      name: 'Property Sellers & Landlords',
+      description: 'List your properties for sale or rent. Reach qualified buyers and tenants with verified profiles and secure transactions.',
+      link: {
+        href: '#seller-form',
+        label: '',
+      },
+      type: 'seller',
+      features: [
+        'Create property listings',
+        'Company profile showcase',
+        'Specialization tags',
+        'Rating & review system'
+      ],
+      icon: BuildingOfficeIcon,
+    },
+    {
+      name: 'Real Estate Agents',
+      description: 'Join as a licensed agent to represent properties. Showcase your agency, specializations, and connect with clients.',
+      link: {
+        href: '#agent-form',
+        label: '',
+      },
+      type: 'agent',
+      features: [
+        'Agency profile',
+        'Business license verification',
+        'Multiple specializations',
+        'Professional network'
+      ],
+      icon: ShieldCheckIcon,
+    },
+    {
+      name: 'Service Providers',
+      description: 'Offer professional services like architecture, contracting, or legal support. Get verified and connect with property owners.',
+      link: {
+        href: '#provider-form',
+        label: '',
+      },
+      type: 'service_provider',
+      features: [
+        'Professional profile',
+        'License verification',
+        'Experience showcase',
+        'Service categorization'
+      ],
+      icon: DevicePhoneMobileIcon,
+    },
+    {
+      name: 'Building Material Suppliers',
+      description: 'List your construction materials and products. Connect with contractors, builders, and DIY homeowners.',
+      link: {
+        href: '#supplier-form',
+        label: '',
+      },
+      type: 'supplier',
+      features: [
+        'Product catalog',
+        'Business verification',
+        'Location-based services',
+        'Multiple service offerings'
+      ],
+      icon: TruckIcon,
+    },
+    {
+      name: 'Contractors & Builders',
+      description: 'Showcase your contracting services. Get matched with property owners needing construction, renovation, or repair work.',
+      link: {
+        href: '#contractor-form',
+        label: '',
+      },
+      type: 'contractor',
+      features: [
+        'Service portfolio',
+        'Specialization areas',
+        'Project gallery',
+        'Client reviews'
+      ],
+      icon: WrenchIcon,
+    },
+  ]
+
+  return (
+    <>
+      <Head>
+        <title >Join Waiting List - ZamSpace</title>
+        <meta
+          name="description"
+          content="Join the ZamSpace waiting list for early access to Zambia's trusted property ecosystem. Verified properties, services, and suppliers."
+        />
+      </Head>
+      <SimpleLayout
+        title="Join the ZamSpace Waiting List"
+        intro="Be among the first to experience Zambia's trusted property ecosystem. Get early access, exclusive offers, and verified status before our public launch."
+          titleClassName="!text-green-900"
+      >
+        {/* Waiting List Options */}
+        <ul
+          role="list"
+          className="grid grid-cols-1 gap-x-12 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 mb-16"
+        >
+          {waitingListTypes.map((offering) => {
+            const IconComponent = offering.icon
+            return (
+              <Card as="li" key={offering.name}>
+                <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-md shadow-zinc-800/5 ring-1 ring-zinc-900/5">
+                  <IconComponent className="h-6 w-6" style={{ color: '#0B6B21' }} />
+                </div>
+                <h2 className="mt-6 text-base font-semibold text-zinc-800">
+                  {offering.name}
+                </h2>
+                <Card.Description>{offering.description}</Card.Description>
+
+                {/* Features List */}
+                <ul className="mt-4 space-y-2">
+                  {offering.features.map((feature, index) => (
+                    <li key={index} className="flex items-center text-sm text-zinc-600">
+                      <CheckIcon className="h-4 w-4 flex-none mr-2" style={{ color: '#0B6B21' }} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )
+          })}
+        </ul>
+
+        {/* Join Waiting List Form */}
+        <div className="rounded-2xl border border-zinc-100 p-6">
+          <h2 className="flex text-sm font-semibold text-zinc-900">
+            <FormIcon className="h-6 w-6 flex-none" />
+            <span className="ml-3">Join Our Exclusive Waiting List</span>
+          </h2>
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
+                Email Address *
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                placeholder="your.email@example.com"
+              />
+            </div>
+
+            {/* Phone Field */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-zinc-700">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                placeholder="+260 XXX XXX XXX"
+              />
+            </div>
+
+            {/* User Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-700">
+                I am a *
+              </label>
+              <div className="mt-2 space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="individual"
+                    checked={formData.userType === 'individual'}
+                    onChange={handleChange}
+                    className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="ml-2 text-sm text-zinc-700">
+                    xTenant/Buyer/Property Seeker
+                  </span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="professional"
+                    checked={formData.userType === 'professional'}
+                    onChange={handleChange}
+                    className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="ml-2 text-sm text-zinc-700">
+                    Landlord/Agent/Service Provider
+                  </span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="provider"
+                    checked={formData.userType === 'provider'}
+                    onChange={handleChange}
+                    className="h-4 w-4 border-zinc-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="ml-2 text-sm text-zinc-700">
+                    Contractor/Supplier/Professional Service
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Message Field */}
+            <div>
+              <label htmlFor="message" className="block text-sm font-medium text-zinc-700">
+                What are you looking for or offering?
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows={3}
+                value={formData.message}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+                placeholder="Tell us about your property needs, services required, or what you're offering..."
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="w-full rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+            >
+              Join Waiting List
+            </button>
+
+            {/* Privacy Note */}
+            <p className="text-xs text-zinc-500 text-center">
+              By joining, you agree to be notified when ZamSpace launches. We respect your privacy and will not share your information.
+            </p>
+          </form>
+        </div>
+      </SimpleLayout>
+    </>
+  )
+}
