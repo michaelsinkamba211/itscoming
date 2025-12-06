@@ -4,7 +4,13 @@ import emailjs from '@emailjs/browser'
 
 import { Card } from '@/components/Card'
 import { SimpleLayout } from '@/components/SimpleLayout'
+import { supabase } from '/lib/supabase.js';
 
+
+/*
+Zamspace.com@@!20
+Zamspace.com@@!20
+*/
 // Icon Components
 function UserGroupIcon(props) {
   return (
@@ -133,13 +139,14 @@ export default function JoinWaitingList() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
 
-  const EMAILJS_SERVICE_ID = 'service_vlyds9h'; 
-  const EMAILJS_TEMPLATE_ID = 'template_uh6ue7h'; 
-  const EMAILJS_PUBLIC_KEY = 'YE9AigopY0l4Anjo7'; 
+  // Replace these with your actual EmailJS credentials
+  const EMAILJS_SERVICE_ID = 'service_vlyds9h'; // Replace with your service ID
+  const EMAILJS_TEMPLATE_ID = 'template_uh6ue7h'; // Replace with your template ID
+  const EMAILJS_PUBLIC_KEY = 'YE9AigopY0l4Anjo7';
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'radio') {
       setFormData(prev => ({
         ...prev,
@@ -153,80 +160,160 @@ export default function JoinWaitingList() {
     }
   };
 
+  // from using email js
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setIsSubmitting(true);
+  //   setSubmitStatus({ type: '', message: '' });
+
+  //   try {
+  //     // Validate email
+  //     if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+  //       throw new Error('Please enter a valid email address');
+  //     }
+
+  //     // Prepare template parameters
+  //     const templateParams = {
+  //       to_email: 'your-receiving-email@example.com', // Email to receive submissions
+  //       from_name: 'ZamSpace Waiting List',
+  //       email: formData.email,
+  //       phone: formData.phone || 'Not provided',
+  //       user_type: getFormattedUserType(formData.userType),
+  //       message: formData.message || 'No message provided',
+  //       company: formData.company || 'Not provided',
+  //       service_type: formData.serviceType || 'Not specified',
+  //       page_source: 'Join Waiting List Page',
+  //       timestamp: new Date().toLocaleString('en-US', { 
+  //         weekday: 'long', 
+  //         year: 'numeric', 
+  //         month: 'long', 
+  //         day: 'numeric',
+  //         hour: '2-digit',
+  //         minute: '2-digit',
+  //         second: '2-digit',
+  //         timeZoneName: 'short'
+  //       }),
+  //     };
+
+  //     // Send email using EmailJS
+  //     const response = await emailjs.send(
+  //       EMAILJS_SERVICE_ID,
+  //       EMAILJS_TEMPLATE_ID,
+  //       templateParams,
+  //       EMAILJS_PUBLIC_KEY
+  //     );
+
+  //     if (response.status === 200) {
+  //       // Reset form on success
+  //       setFormData({
+  //         email: '',
+  //         phone: '',
+  //         userType: 'individual',
+  //         message: '',
+  //         company: '',
+  //         serviceType: ''
+  //       });
+
+  //       setSubmitStatus({
+  //         type: 'success',
+  //         message: 'Successfully joined the waiting list! We\'ll notify you when we launch.'
+  //       });
+
+  //       // Optional: Log submission to console
+  //       console.log('Form submitted successfully from waiting list page:', templateParams);
+  //     }
+  //   } catch (error) {
+  //     console.error('EmailJS Error:', error);
+  //     setSubmitStatus({
+  //       type: 'error',
+  //       message: error.text || 'Failed to submit. Please try again or contact support.'
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
+
+
+  // Replace your current handleSubmit function with this:
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus({ type: '', message: '' });
 
     try {
-      // Validate email
+      // 1. Validate email
       if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
         throw new Error('Please enter a valid email address');
       }
 
-      // Prepare template parameters
-      const templateParams = {
-        to_email: 'your-receiving-email@example.com', // Email to receive submissions
-        from_name: 'ZamSpace Waiting List',
+      // 2. Import supabase
+      // const { supabase } = await import('@/lib/supabase.js');
+
+      // 3. Prepare data for Supabase
+      const submissionData = {
         email: formData.email,
-        phone: formData.phone || 'Not provided',
-        user_type: getFormattedUserType(formData.userType),
-        message: formData.message || 'No message provided',
-        company: formData.company || 'Not provided',
-        service_type: formData.serviceType || 'Not specified',
-        page_source: 'Join Waiting List Page',
-        timestamp: new Date().toLocaleString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZoneName: 'short'
-        }),
+        phone: formData.phone || null,
+        user_type: formData.userType,
+        message: formData.message || null,
+        company: formData.company || null,
+        service_type: formData.serviceType || null,
+        // created_at and status will be set automatically by Supabase
       };
 
-      // Send email using EmailJS
-      const response = await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
+      // 4. Insert into Supabase
+      const { data, error } = await supabase
+        .from('waiting_list')
+        .insert([submissionData])
+        .select()
+        .single(); // Get the inserted row back
 
-      if (response.status === 200) {
-        // Reset form on success
-        setFormData({
-          email: '',
-          phone: '',
-          userType: 'individual',
-          message: '',
-          company: '',
-          serviceType: ''
-        });
-        
-        setSubmitStatus({
-          type: 'success',
-          message: 'Successfully joined the waiting list! We\'ll notify you when we launch.'
-        });
-        
-        // Optional: Log submission to console
-        console.log('Form submitted successfully from waiting list page:', templateParams);
+      // 5. Handle errors
+      if (error) {
+        console.error('Supabase error:', error);
+
+        if (error.code === '23505') {
+          throw new Error('This email is already registered. Please use a different email.');
+        }
+
+        throw new Error(error.message || 'Failed to save registration. Please try again.');
       }
+
+      console.log('Success! Data saved:', data);
+
+
+      // 7. Reset form on success
+      setFormData({
+        email: '',
+        phone: '',
+        userType: 'individual',
+        message: '',
+        company: '',
+        serviceType: ''
+      });
+
+      // 8. Show success message
+      setSubmitStatus({
+        type: 'success',
+        message: ' Successfully joined the waiting list! We\'ll notify you when we launch.'
+      });
+
     } catch (error) {
-      console.error('EmailJS Error:', error);
+      console.error('Form submission error:', error);
       setSubmitStatus({
         type: 'error',
-        message: error.text || 'Failed to submit. Please try again or contact support.'
+        message: error.message || ' Failed to submit. Please try again or contact support.'
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+
+
   const getFormattedUserType = (type) => {
-    switch(type) {
+    switch (type) {
       case 'individual':
         return 'Tenant/Buyer/Property Seeker';
       case 'professional':
@@ -510,7 +597,7 @@ export default function JoinWaitingList() {
             {(formData.userType === 'professional' || formData.userType === 'provider') && (
               <div>
                 <label htmlFor="serviceType" className="block text-sm font-medium text-zinc-700">
-                  Primary Service/Category
+                  Primary Service/Category *
                 </label>
                 <select
                   id="serviceType"
@@ -519,20 +606,53 @@ export default function JoinWaitingList() {
                   onChange={handleChange}
                   className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                   disabled={isSubmitting}
+                  required
                 >
-                  <option value="">Select a category</option>
-                  <option value="real_estate_agent">Real Estate Agent</option>
-                  <option value="property_management">Property Management</option>
-                  <option value="legal_services">Legal Services</option>
-                  <option value="architecture">Architecture</option>
-                  <option value="construction">Construction</option>
-                  <option value="interior_design">Interior Design</option>
-                  <option value="surveying">Surveying</option>
-                  <option value="electrical">Electrical Services</option>
-                  <option value="plumbing">Plumbing Services</option>
-                  <option value="building_materials">Building Materials</option>
-                  <option value="other">Other</option>
+                  <option value="">Select your profession/category</option>
+
+                  {/* Property Professionals */}
+                  <optgroup label="Property Professionals">
+                    <option value="landlord">Landlord</option>
+                    <option value="tenant">Tenant</option>
+                    <option value="buyer">Buyer</option>
+                    <option value="seller">Seller</option>
+                    <option value="estate_agent">Estate Agent</option>
+                    <option value="corporate_relocation">Corporate Relocation / Removals</option>
+                  </optgroup>
+
+                  {/* Property Services & Construction */}
+                  <optgroup label="Property Services & Construction">
+                    <option value="surveyor">Surveyor</option>
+                    <option value="architect">Architect</option>
+                    <option value="structural_engineer">Structural Engineer</option>
+                    <option value="interior_designer">Interior Designer</option>
+                    <option value="builder">Builder</option>
+                    <option value="bricklayer">Bricklayer</option>
+                    <option value="plumber_electrician">Plumber / Electrician</option>
+                    <option value="carpenter_joiner">Carpenter / Joiner</option>
+                    <option value="tiler">Tiler</option>
+                    <option value="landscaper">Landscaper</option>
+                  </optgroup>
+
+                  {/* Professional Services */}
+                  <optgroup label="Professional Services">
+                    <option value="lawyer">Lawyer</option>
+                    <option value="bank_financial">Bank / Financial Lender</option>
+                    <option value="accountant_bookkeeping">Accountant / Bookkeeping</option>
+                    <option value="insurance">Insurance</option>
+                  </optgroup>
+
+                  {/* Security & Technology */}
+                  <optgroup label="Security & Technology">
+                    <option value="smart_systems_cctv">Smart Systems / CCTV</option>
+                    <option value="security_company">Security Company</option>
+                  </optgroup>
+
+                  <option value="other">Other (Please specify in message)</option>
                 </select>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Select the category that best describes your role or service
+                </p>
               </div>
             )}
 
@@ -574,7 +694,7 @@ export default function JoinWaitingList() {
 
             {/* Privacy Note */}
             <p className="text-xs text-zinc-500 text-center">
-              By joining, you agree to be notified when ZamSpace launches. We respect your privacy and will not share your information
+              By joining, you agree to be notified when ZamSpace launches. We respect your privacy and will not share your information.
             </p>
           </form>
         </div>

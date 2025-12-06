@@ -1,0 +1,992 @@
+import { useState, useEffect } from 'react';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { supabase } from '/lib/supabase.js';
+import {
+    FiUsers,
+    FiCalendar,
+    FiTrendingUp,
+    FiDownload,
+    FiLogOut,
+    FiSearch,
+    FiFilter,
+    FiMail,
+    FiPhone,
+    FiBriefcase,
+    FiClock,
+    FiEye,
+    FiTrash2,
+    FiRefreshCw,
+    FiChevronLeft,
+    FiChevronRight
+} from 'react-icons/fi';
+
+export default function AdminPage() {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [password, setPassword] = useState('');
+    const [registrations, setRegistrations] = useState([]);
+    const [filteredRegistrations, setFilteredRegistrations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loginLoading, setLoginLoading] = useState(false); // Add this
+    const [error, setError] = useState('');
+    const [lastActivity, setLastActivity] = useState(Date.now());
+    const [searchTerm, setSearchTerm] = useState('');
+    const [userTypeFilter, setUserTypeFilter] = useState('all');
+    const [dateFilter, setDateFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [selectedRegistration, setSelectedRegistration] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const router = useRouter();
+
+    const SESSION_TIMEOUT = 30 * 60 * 1000;
+
+    // Stats calculations
+    const stats = {
+        total: registrations.length,
+        today: registrations.filter(r => {
+            const today = new Date();
+            const regDate = new Date(r.created_at);
+            return regDate.toDateString() === today.toDateString();
+        }).length,
+        thisWeek: registrations.filter(r => {
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            return new Date(r.created_at) > oneWeekAgo;
+        }).length,
+        byType: {
+            individual: registrations.filter(r => r.user_type === 'individual').length,
+            professional: registrations.filter(r => r.user_type === 'professional').length,
+            provider: registrations.filter(r => r.user_type === 'provider').length,
+        }
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoginLoading(true);
+
+        try {
+
+            // First, let's see what's in the table
+            const { data: allData, error: listError } = await supabase
+                .from('admin_settings')
+                .select('*');
+
+            if (listError) {
+                console.error('Error listing settings:', listError);
+            }
+
+            // Now try to get the specific password
+            const { data, error: fetchError } = await supabase
+                .from('admin_settings')
+                .select('setting_value')
+                .eq('setting_key', 'admin_password')
+                .single();
+
+            if (fetchError) {
+                console.error('Error fetching admin password:', fetchError);
+                throw new Error('Failed to verify password. Please check database configuration.');
+            }
+
+            // Get the correct password from database
+            const correctPassword = data?.setting_value;
+
+            if (!correctPassword) {
+                throw new Error('Admin password not configured in database');
+            }
+
+            // Compare passwords
+            if (password === correctPassword) {
+                setIsAuthenticated(true);
+                setLastActivity(Date.now());
+                localStorage.setItem('admin-authenticated', Date.now().toString());
+            } else {
+                setError('Incorrect password');
+            }
+
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.message || 'Login failed. Please try again.');
+        } finally {
+            setLoginLoading(false);
+        }
+    };
+
+    const fetchRegistrations = async () => {
+        setLoading(true);
+        setError('');
+
+        try {
+            const { data, error } = await supabase
+                .from('waiting_list')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            setRegistrations(data || []);
+            setFilteredRegistrations(data || []);
+        } catch (err) {
+            console.error('Error fetching data:', err);
+            setError('Failed to load registrations: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Session management
+    useEffect(() => {
+        const authTimestamp = localStorage.getItem('admin-authenticated');
+        if (authTimestamp) {
+            const timeSinceLogin = Date.now() - parseInt(authTimestamp);
+            if (timeSinceLogin < SESSION_TIMEOUT) {
+                setIsAuthenticated(true);
+                setLastActivity(Date.now());
+            } else {
+                localStorage.removeItem('admin-authenticated');
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchRegistrations();
+        }
+    }, [isAuthenticated]);
+
+    // Auto-logout on inactivity
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const activities = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+        const updateActivity = () => {
+            setLastActivity(Date.now());
+        };
+
+        activities.forEach(event => {
+            window.addEventListener(event, updateActivity);
+        });
+
+        const activityCheck = setInterval(() => {
+            const now = Date.now();
+            const timeSinceLastActivity = now - lastActivity;
+
+            if (timeSinceLastActivity > SESSION_TIMEOUT) {
+                handleLogout();
+                alert('Session expired due to inactivity. Please login again.');
+            }
+        }, 30000);
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                setLastActivity(Date.now());
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            activities.forEach(event => {
+                window.removeEventListener(event, updateActivity);
+            });
+            clearInterval(activityCheck);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [isAuthenticated, lastActivity]);
+
+    // Auto-logout when navigating to non-admin pages
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const handleRouteChange = (url) => {
+            if (!url.startsWith('/admin')) {
+                handleLogout();
+            }
+        };
+
+        router.events.on('routeChangeStart', handleRouteChange);
+
+        return () => {
+            router.events.off('routeChangeStart', handleRouteChange);
+        };
+    }, [isAuthenticated, router]);
+
+    // Handle browser back/forward buttons
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const handlePopState = () => {
+            if (!window.location.pathname.startsWith('/admin')) {
+                handleLogout();
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [isAuthenticated]);
+
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        localStorage.removeItem('admin-authenticated');
+        router.push('/');
+    };
+
+    const handleRefresh = () => {
+        fetchRegistrations();
+    };
+
+    // Apply filters
+    useEffect(() => {
+        let filtered = [...registrations];
+
+        if (searchTerm) {
+            filtered = filtered.filter(reg =>
+                reg.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (reg.phone && reg.phone.includes(searchTerm)) ||
+                (reg.company && reg.company.toLowerCase().includes(searchTerm.toLowerCase()))
+            );
+        }
+
+        if (userTypeFilter !== 'all') {
+            filtered = filtered.filter(reg => reg.user_type === userTypeFilter);
+        }
+
+        if (dateFilter !== 'all') {
+            const now = new Date();
+            let startDate = new Date();
+
+            switch (dateFilter) {
+                case 'today':
+                    startDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'week':
+                    startDate.setDate(now.getDate() - 7);
+                    break;
+                case 'month':
+                    startDate.setMonth(now.getMonth() - 1);
+                    break;
+            }
+
+            filtered = filtered.filter(reg => new Date(reg.created_at) >= startDate);
+        }
+
+        setFilteredRegistrations(filtered);
+        setCurrentPage(1);
+    }, [searchTerm, userTypeFilter, dateFilter, registrations]);
+
+    // Pagination
+    const totalPages = Math.ceil(filteredRegistrations.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentItems = filteredRegistrations.slice(startIndex, endIndex);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const formatRelativeTime = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+
+        if (diffInHours < 1) {
+            return 'Just now';
+        } else if (diffInHours < 24) {
+            return `${diffInHours}h ago`;
+        } else if (diffInHours < 168) {
+            return `${Math.floor(diffInHours / 24)}d ago`;
+        } else {
+            return formatDate(dateString);
+        }
+    };
+
+    const getUserTypeColor = (type) => {
+        switch (type) {
+            case 'individual': return 'bg-blue-100 text-blue-800';
+            case 'professional': return 'bg-green-100 text-green-800';
+            case 'provider': return 'bg-purple-100 text-purple-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    const getUserTypeLabel = (type) => {
+        const serviceTypeLabels = {
+            'landlord': 'Landlord',
+            'tenant': 'Tenant',
+            'buyer': 'Buyer',
+            'seller': 'Seller',
+            'estate_agent': 'Estate Agent',
+            'corporate_relocation': 'Corporate Relocation',
+            'surveyor': 'Surveyor',
+            'architect': 'Architect',
+            'structural_engineer': 'Structural Engineer',
+            'interior_designer': 'Interior Designer',
+            'builder': 'Builder',
+            'bricklayer': 'Bricklayer',
+            'plumber_electrician': 'Plumber/Electrician',
+            'carpenter_joiner': 'Carpenter/Joiner',
+            'tiler': 'Tiler',
+            'landscaper': 'Landscaper',
+            'lawyer': 'Lawyer',
+            'bank_financial': 'Bank/Financial',
+            'accountant_bookkeeping': 'Accountant',
+            'insurance': 'Insurance',
+            'smart_systems_cctv': 'Smart Systems/CCTV',
+            'security_company': 'Security Company',
+            'real_estate_agent': 'Real Estate Agent',
+            'property_management': 'Property Management',
+            'legal_services': 'Legal Services',
+            'construction': 'Construction',
+            'electrical': 'Electrical Services',
+            'plumbing': 'Plumbing Services',
+            'building_materials': 'Building Materials',
+            'other': 'Other',
+        };
+
+        if (type === 'individual') return 'Buyer/Tenant';
+        if (type === 'professional') return 'Professional';
+        if (type === 'provider') return 'Service Provider';
+        return serviceTypeLabels[type] || type;
+    };
+
+    const viewRegistrationDetails = (reg) => {
+        setSelectedRegistration(reg);
+        setShowModal(true);
+    };
+
+    const exportToCSV = () => {
+        const headers = ['Email', 'Phone', 'User Type', 'Service Type', 'Company', 'Message', 'Date Joined'];
+
+        const csvData = registrations.map(reg => [
+            reg.email,
+            reg.phone || '',
+            getUserTypeLabel(reg.user_type),
+            getUserTypeLabel(reg.service_type),
+            reg.company || '',
+            `"${(reg.message || '').replace(/"/g, '""')}"`,
+            formatDate(reg.created_at)
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `zammspace-waiting-list-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+    };
+
+    // Login form if not authenticated
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Head>
+                    <title>Admin Login - ZamSpace</title>
+                </Head>
+
+                <div className="max-w-md w-full space-y-8 p-8">
+                    <div className="text-center">
+                        <div className="mx-auto h-12 w-12 bg-green-600 rounded-sm flex items-center justify-center">
+                            <FiUsers className="h-6 w-6 text-white" />
+                        </div>
+                        <h2 className="mt-6 text-2xl font-bold text-gray-900">
+                            Admin Dashboard
+                        </h2>
+                        <p className="mt-2 text-sm text-gray-600">
+                            ZamSpace Waiting List Management
+                        </p>
+                    </div>
+
+                    <div className=" rounded-sm shadow-sm border border-gray-200 p-8">
+                        <form className="space-y-6" onSubmit={handleLogin}>
+                            {error && (
+                                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-sm">
+                                    <div className="flex items-center">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm text-red-700">{error}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                                        placeholder="Enter admin password"
+                                        required
+                                        disabled={loginLoading}
+                                    />
+                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loginLoading}
+                                className="w-full py-3 px-4 bg-green-600 text-white font-medium rounded-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50"
+                            >
+                                {loginLoading ? (
+                                    <span className="flex items-center justify-center">
+                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Verifying...
+                                    </span>
+                                ) : 'Sign In'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Admin Dashboard
+    return (
+        <>
+            <Head>
+                <title>Admin Dashboard - ZamSpace</title>
+            </Head>
+
+            {/* Modal for Registration Details */}
+            {showModal && selectedRegistration && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className=" rounded-sm max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                        <div className="p-6 border-b border-gray-200">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xl font-semibold text-gray-900">Registration Details</h3>
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="text-gray-400 hover:text-gray-500"
+                                >
+                                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto">
+                            <div className="space-y-6">
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                        <div className="h-12 w-12 bg-green-100 rounded-sm flex items-center justify-center">
+                                            <FiMail className="h-6 w-6 text-green-600" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-500">Email</h4>
+                                        <p className="mt-1 text-lg text-gray-900">{selectedRegistration.email}</p>
+                                    </div>
+                                </div>
+
+                                {selectedRegistration.phone && (
+                                    <div className="flex items-start space-x-4">
+                                        <div className="flex-shrink-0">
+                                            <div className="h-12 w-12 bg-blue-100 rounded-sm flex items-center justify-center">
+                                                <FiPhone className="h-6 w-6 text-blue-600" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-medium text-gray-500">Phone</h4>
+                                            <p className="mt-1 text-lg text-gray-900">{selectedRegistration.phone}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                        <div className="h-12 w-12 bg-purple-100 rounded-sm flex items-center justify-center">
+                                            <FiBriefcase className="h-6 w-6 text-purple-600" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-500">User Type</h4>
+                                        <div className="mt-1">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-sm text-sm font-medium ${getUserTypeColor(selectedRegistration.user_type)}`}>
+                                                {getUserTypeLabel(selectedRegistration.user_type)}
+                                            </span>
+                                        </div>
+                                        {selectedRegistration.service_type && (
+                                            <p className="mt-2 text-sm text-gray-600">
+                                                Service: {selectedRegistration.service_type}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {selectedRegistration.company && (
+                                    <div className="flex items-start space-x-4">
+                                        <div className="flex-shrink-0">
+                                            <div className="h-12 w-12 bg-yellow-100 rounded-sm flex items-center justify-center">
+                                                <FiBriefcase className="h-6 w-6 text-yellow-600" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-medium text-gray-500">Company/Organization</h4>
+                                            <p className="mt-1 text-lg text-gray-900">{selectedRegistration.company}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedRegistration.message && (
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-500 mb-2">Message</h4>
+                                        <div className="bg-gray-50 rounded-sm p-4">
+                                            <p className="text-gray-700">{selectedRegistration.message}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                        <div className="h-12 w-12 bg-gray-100 rounded-sm flex items-center justify-center">
+                                            <FiClock className="h-6 w-6 text-gray-600" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-medium text-gray-500">Registration Date</h4>
+                                        <p className="mt-1 text-lg text-gray-900">{formatDate(selectedRegistration.created_at)}</p>
+                                        <p className="mt-1 text-sm text-gray-500">{formatRelativeTime(selectedRegistration.created_at)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-gray-200 bg-gray-50">
+                            <div className="flex justify-end space-x-3">
+
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-sm hover:bg-green-700 transition"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="min-h-screen  mt-18">
+                {/* Header */}
+                <header className="shadow-sm border-b border-gray-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between items-center py-4">
+                            <div className="flex items-center space-x-4">
+                                <div className="bg-green-600 p-2 rounded-sm">
+                                    <FiUsers className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900">ZamSpace Waiting List</h1>
+                                    <p className="text-sm text-gray-600">Manage your waiting list registrations</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center space-x-4">
+                                <div className="hidden sm:flex items-center text-sm text-gray-500">
+                                    <div className="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                                    <span>Session Active</span>
+                                </div>
+
+                                <button
+                                    onClick={handleRefresh}
+                                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-sm transition"
+                                    title="Refresh data"
+                                >
+                                    <FiRefreshCw className="h-5 w-5" />
+                                </button>
+
+                                <button
+                                    onClick={exportToCSV}
+                                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-sm hover:bg-blue-700 transition"
+                                >
+                                    <FiDownload className="mr-2 h-5 w-5" />
+                                    Export CSV
+                                </button>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center px-4 py-2 border border-red-300 text-red-700 rounded-sm hover:bg-red-50 transition"
+                                >
+                                    <FiLogOut className="mr-2 h-5 w-5" />
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <main className="max-w-[1250px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    {/* Stats Cards - Changed to 3 cards, removed This Month */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className=" rounded-sm shadow-sm border border-gray-200 p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Total Registrations</p>
+                                    <p className="mt-2 text-2xl font-bold text-gray-900">{stats.total}</p>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div className=" rounded-sm shadow-sm border border-gray-200 p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">Today</p>
+                                    <p className="mt-2 text-2xl font-bold text-green-600">{stats.today}</p>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div className=" rounded-sm shadow-sm border border-gray-200 p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">This Week</p>
+                                    <p className="mt-2 text-2xl font-bold text-blue-600">{stats.thisWeek}</p>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+
+    
+
+                    {/* Filters and Search */}
+                    <div className=" rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex-1">
+                                <div className="relative">
+                                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by email, phone, or company..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <div className="relative">
+                                    <FiFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                                    {/* In your admin dashboard filters */}
+                                    <select
+                                        value={userTypeFilter}
+                                        onChange={(e) => setUserTypeFilter(e.target.value)}
+                                        className="pl-10 pr-8 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none "
+                                    >
+                                        <option value="all">All Categories</option>
+                                        <optgroup label="Main Categories">
+                                            <option value="individual">Buyers/Tenants</option>
+                                            <option value="professional">Property Professionals</option>
+                                            <option value="provider">Service Providers</option>
+                                        </optgroup>
+                                        <optgroup label="Property Professionals">
+                                            <option value="landlord">Landlords</option>
+                                            <option value="estate_agent">Estate Agents</option>
+                                            <option value="seller">Sellers</option>
+                                        </optgroup>
+                                        <optgroup label="Service Providers">
+                                            <option value="architect">Architects</option>
+                                            <option value="builder">Builders</option>
+                                            <option value="lawyer">Lawyers</option>
+                                            {/* Add more specific filters as needed */}
+                                        </optgroup>
+                                    </select>
+                                </div>
+
+                                <select
+                                    value={dateFilter}
+                                    onChange={(e) => setDateFilter(e.target.value)}
+                                    className="px-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none "
+                                >
+                                    <option value="all">All Time</option>
+                                    <option value="today">Today</option>
+                                    <option value="week">This Week</option>
+                                    <option value="month">This Month</option>
+                                </select>
+
+                                <select
+                                    value={itemsPerPage}
+                                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                                    className="px-4 py-3 border border-gray-300 rounded-sm focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none "
+                                >
+                                    <option value="10">10 per page</option>
+                                    <option value="25">25 per page</option>
+                                    <option value="50">50 per page</option>
+                                    <option value="100">100 per page</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
+                            <div>
+                                Showing {startIndex + 1} to {Math.min(endIndex, filteredRegistrations.length)} of{' '}
+                                {filteredRegistrations.length} registrations
+                                {searchTerm && ` (filtered from ${registrations.length})`}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <span className="text-gray-500">Results:</span>
+                                <span className="font-medium">{filteredRegistrations.length}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Registrations Table */}
+                    <div className=" rounded-sm shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-semibold text-gray-900">All Registrations</h2>
+                                <div className="text-sm text-gray-600">
+                                    {loading ? 'Updating...' : `${filteredRegistrations.length} registrations`}
+                                </div>
+                            </div>
+                        </div>
+
+                        {loading ? (
+                            <div className="p-12 text-center">
+                                <div className="inline-flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+                                </div>
+                                <p className="mt-4 text-gray-600">Loading registrations...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="p-6">
+                                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-sm">
+                                    <div className="flex items-center">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <p className="text-sm text-red-700">{error}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : filteredRegistrations.length === 0 ? (
+                            <div className="p-12 text-center">
+                                <div className="mx-auto h-16 w-16 bg-gray-100 rounded-sm flex items-center justify-center">
+                                    <FiSearch className="h-8 w-8 text-gray-400" />
+                                </div>
+                                <h3 className="mt-4 text-lg font-medium text-gray-900">No registrations found</h3>
+                                <p className="mt-2 text-gray-600">
+                                    {searchTerm ? 'Try adjusting your search or filters' : 'No registrations yet'}
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    User
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Type
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Contact
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Date
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className=" divide-y divide-gray-200">
+                                            {currentItems.map((reg) => (
+                                                <tr key={reg.id} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center">
+                                                            <div className="flex-shrink-0 h-10 w-10 bg-green-100 rounded-sm flex items-center justify-center">
+                                                                <FiMail className="h-5 w-5 text-green-600" />
+                                                            </div>
+                                                            <div className="ml-4">
+                                                                <div className="text-sm font-medium text-gray-900">{reg.email}</div>
+                                                                {reg.company && (
+                                                                    <div className="text-sm text-gray-500">{reg.company}</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex flex-col space-y-1">
+                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-medium ${getUserTypeColor(reg.user_type)}`}>
+                                                                {getUserTypeLabel(reg.user_type)}
+                                                            </span>
+                                                            {reg.service_type && (
+                                                                <span className="text-xs text-gray-500 truncate max-w-[120px]">
+                                                                    {reg.service_type}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">
+                                                            {reg.phone || 'No phone'}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {reg.message ? `${reg.message.substring(0, 30)}...` : 'No message'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">
+                                                            {formatDate(reg.created_at)}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {formatRelativeTime(reg.created_at)}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                        <div className="flex items-center space-x-2">
+                                                            <button
+                                                                onClick={() => viewRegistrationDetails(reg)}
+                                                                className="text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded-sm transition"
+                                                                title="View details"
+                                                            >
+                                                                <FiEye className="h-5 w-5" />
+                                                            </button>
+
+
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Pagination */}
+                                {totalPages > 1 && (
+                                    <div className="px-6 py-4 border-t border-gray-200">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex-1 flex justify-between sm:hidden">
+                                                <button
+                                                    onClick={() => handlePageChange(currentPage - 1)}
+                                                    disabled={currentPage === 1}
+                                                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-sm text-gray-700  hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Previous
+                                                </button>
+                                                <button
+                                                    onClick={() => handlePageChange(currentPage + 1)}
+                                                    disabled={currentPage === totalPages}
+                                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-sm text-gray-700  hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                                <div>
+                                                    <p className="text-sm text-gray-700">
+                                                        Page <span className="font-medium">{currentPage}</span> of{' '}
+                                                        <span className="font-medium">{totalPages}</span>
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <nav className="relative z-0 inline-flex rounded-sm shadow-sm -space-x-px">
+                                                        <button
+                                                            onClick={() => handlePageChange(currentPage - 1)}
+                                                            disabled={currentPage === 1}
+                                                            className="relative inline-flex items-center px-2 py-2 rounded-l-sm border border-gray-300  text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            <span className="sr-only">Previous</span>
+                                                            <FiChevronLeft className="h-5 w-5" />
+                                                        </button>
+
+                                                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                            let pageNumber;
+                                                            if (totalPages <= 5) {
+                                                                pageNumber = i + 1;
+                                                            } else if (currentPage <= 3) {
+                                                                pageNumber = i + 1;
+                                                            } else if (currentPage >= totalPages - 2) {
+                                                                pageNumber = totalPages - 4 + i;
+                                                            } else {
+                                                                pageNumber = currentPage - 2 + i;
+                                                            }
+
+                                                            return (
+                                                                <button
+                                                                    key={pageNumber}
+                                                                    onClick={() => handlePageChange(pageNumber)}
+                                                                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === pageNumber
+                                                                        ? 'z-10 bg-green-50 border-green-500 text-green-600'
+                                                                        : ' border-gray-300 text-gray-500 hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    {pageNumber}
+                                                                </button>
+                                                            );
+                                                        })}
+
+                                                        <button
+                                                            onClick={() => handlePageChange(currentPage + 1)}
+                                                            disabled={currentPage === totalPages}
+                                                            className="relative inline-flex items-center px-2 py-2 rounded-r-sm border border-gray-300  text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            <span className="sr-only">Next</span>
+                                                            <FiChevronRight className="h-5 w-5" />
+                                                        </button>
+                                                    </nav>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                </main>
+            </div>
+        </>
+    );
+}

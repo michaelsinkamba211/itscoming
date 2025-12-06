@@ -13,12 +13,7 @@ import { FaTiktok } from "react-icons/fa";
 import { CiLinkedin } from "react-icons/ci";
 import { FiInstagram } from "react-icons/fi";
 
-// import image1 from '@/images/photos/image1.jpg'
-// import image2 from '@/images/photos/image2.jpg'
-// import image3 from '@/images/photos/image5.jpg'
-// import image4 from '@/images/photos/image4.jpg'
-// import image5 from '@/images/photos/image6.jpg'
-
+import { supabase } from '/lib/supabase.js';
 import { generateRssFeed } from '@/lib/generateRssFeed'
 import { getAllArticles } from '@/lib/getAllArticles'
 import { formatDate } from '@/lib/formatDate'
@@ -141,19 +136,17 @@ function WaitingListForm() {
     email: '',
     phone: '',
     userType: 'individual',
-    message: ''
+    message: '',
+    company: '',
+    serviceType: ''
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
 
-  // Replace these with your actual EmailJS credentials
-  const EMAILJS_SERVICE_ID = 'service_vlyds9h'; 
-  const EMAILJS_TEMPLATE_ID = 'template_uh6ue7h'; 
-  const EMAILJS_PUBLIC_KEY = 'YE9AigopY0l4Anjo7';
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'radio') {
       setFormData(prev => ({
         ...prev,
@@ -178,56 +171,60 @@ function WaitingListForm() {
         throw new Error('Please enter a valid email address');
       }
 
-      // Prepare template parameters
-      const templateParams = {
-        to_email: 'your-receiving-email@example.com', // Email to receive submissions
-        from_name: 'ZamSpace Waiting List',
+
+      // Prepare data for Supabase
+      const submissionData = {
         email: formData.email,
-        phone: formData.phone || 'Not provided',
-        user_type: getFormattedUserType(formData.userType),
-        message: formData.message || 'No message provided',
-        timestamp: new Date().toLocaleString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZoneName: 'short'
-        }),
+        phone: formData.phone || null,
+        user_type: formData.userType,
+        message: formData.message || null,
+        company: formData.company || null,
+        service_type: formData.serviceType || null,
       };
 
-      // Send email using EmailJS
-      const response = await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        templateParams,
-        EMAILJS_PUBLIC_KEY
-      );
+      console.log('Submitting to Supabase from home page:', submissionData);
 
-      if (response.status === 200) {
-        // Reset form on success
-        setFormData({
-          email: '',
-          phone: '',
-          userType: 'individual',
-          message: ''
-        });
-        
-        setSubmitStatus({
-          type: 'success',
-          message: 'Successfully joined the waiting list! We\'ll notify you when we launch.'
-        });
-        
-        // Optional: Log submission to console
-        console.log('Form submitted successfully:', templateParams);
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('waiting_list')
+        .insert([submissionData])
+        .select()
+        .single();
+
+      // Handle errors
+      if (error) {
+        console.error('Supabase error:', error);
+
+        if (error.code === '23505') {
+          throw new Error('This email is already registered. Please use a different email.');
+        }
+
+        throw new Error(error.message || 'Failed to save registration. Please try again.');
       }
+
+      console.log('Success! Data saved from home page:', data);
+
+      // Reset form on success
+      setFormData({
+        email: '',
+        phone: '',
+        userType: 'individual',
+        message: '',
+        company: '',
+        serviceType: ''
+      });
+
+      // Show success message
+      setSubmitStatus({
+        type: 'success',
+        message: 'Successfully joined the waiting list! We\'ll notify you when we launch.'
+      });
+
     } catch (error) {
-      console.error('EmailJS Error:', error);
+      console.error('Form submission error:', error);
       setSubmitStatus({
         type: 'error',
-        message: error.text || 'Failed to submit. Please try again or contact support.'
+        message: error.message || 'Failed to submit. Please try again or contact support.'
       });
     } finally {
       setIsSubmitting(false);
@@ -235,7 +232,7 @@ function WaitingListForm() {
   };
 
   const getFormattedUserType = (type) => {
-    switch(type) {
+    switch (type) {
       case 'individual':
         return 'Tenant/Buyer/Property Seeker';
       case 'professional':
@@ -297,6 +294,23 @@ function WaitingListForm() {
           />
         </div>
 
+        {/* Company/Organization Field (Optional) */}
+        <div>
+          <label htmlFor="company" className="block text-sm font-medium text-zinc-700">
+            Company/Organization (Optional)
+          </label>
+          <input
+            type="text"
+            id="company"
+            name="company"
+            value={formData.company}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 shadow-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            placeholder="Your company name"
+            disabled={isSubmitting}
+          />
+        </div>
+
         {/* User Type Selection */}
         <div>
           <label className="block text-sm font-medium text-zinc-700">
@@ -348,6 +362,69 @@ function WaitingListForm() {
           </div>
         </div>
 
+        {/* Service Type Selection (Conditional) */}
+        {(formData.userType === 'professional' || formData.userType === 'provider') && (
+          <div>
+            <label htmlFor="serviceType" className="block text-sm font-medium text-zinc-700">
+              Primary Service/Category *
+            </label>
+            <select
+              id="serviceType"
+              name="serviceType"
+              value={formData.serviceType}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              disabled={isSubmitting}
+              required
+            >
+              <option value="">Select your profession/category</option>
+
+              {/* Property Professionals */}
+              <optgroup label="Property Professionals">
+                <option value="landlord">Landlord</option>
+                <option value="tenant">Tenant</option>
+                <option value="buyer">Buyer</option>
+                <option value="seller">Seller</option>
+                <option value="estate_agent">Estate Agent</option>
+                <option value="corporate_relocation">Corporate Relocation / Removals</option>
+              </optgroup>
+
+              {/* Property Services & Construction */}
+              <optgroup label="Property Services & Construction">
+                <option value="surveyor">Surveyor</option>
+                <option value="architect">Architect</option>
+                <option value="structural_engineer">Structural Engineer</option>
+                <option value="interior_designer">Interior Designer</option>
+                <option value="builder">Builder</option>
+                <option value="bricklayer">Bricklayer</option>
+                <option value="plumber_electrician">Plumber / Electrician</option>
+                <option value="carpenter_joiner">Carpenter / Joiner</option>
+                <option value="tiler">Tiler</option>
+                <option value="landscaper">Landscaper</option>
+              </optgroup>
+
+              {/* Professional Services */}
+              <optgroup label="Professional Services">
+                <option value="lawyer">Lawyer</option>
+                <option value="bank_financial">Bank / Financial Lender</option>
+                <option value="accountant_bookkeeping">Accountant / Bookkeeping</option>
+                <option value="insurance">Insurance</option>
+              </optgroup>
+
+              {/* Security & Technology */}
+              <optgroup label="Security & Technology">
+                <option value="smart_systems_cctv">Smart Systems / CCTV</option>
+                <option value="security_company">Security Company</option>
+              </optgroup>
+
+              <option value="other">Other (Please specify in message)</option>
+            </select>
+            <p className="mt-1 text-xs text-zinc-500">
+              Select the category that best describes your role or service
+            </p>
+          </div>
+        )}
+
         {/* Message Field */}
         <div>
           <label htmlFor="message" className="block text-sm font-medium text-zinc-700">
@@ -390,7 +467,7 @@ function WaitingListForm() {
         </p>
       </form>
     </div>
-  )
+  );
 }
 
 function Photos() {
