@@ -488,7 +488,7 @@ export default function AdminPage() {
             {/* Modal for Registration Details */}
             {showModal && selectedRegistration && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className=" rounded-sm max-w-2xl w-full max-h-[90vh] overflow-hidden">
+                    <div className="bg-white rounded-sm max-w-2xl w-full max-h-[90vh] overflow-hidden">
                         <div className="p-6 border-b border-gray-200">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-xl font-semibold text-gray-900">Registration Details</h3>
@@ -691,7 +691,7 @@ export default function AdminPage() {
                         </div>
                     </div>
 
-    
+
 
                     {/* Filters and Search */}
                     <div className=" rounded-sm shadow-sm border border-gray-200 p-6 mb-6">
