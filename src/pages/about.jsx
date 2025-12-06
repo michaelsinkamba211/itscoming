@@ -183,20 +183,6 @@ export default function About() {
           </div>
           <div className="lg:pr-20">
             <ul role="list">
-              {/* <SocialLink
-                href="https://facebook.com/in/tinga-koloko"
-                icon={FaFacebookF}
-                className="mt-4"
-              >
-                Follow on Facebook
-              </SocialLink>
-              <SocialLink
-                href="https://twitter.com/tingakoloko"
-                icon={TwitterIcon}
-                className="mt-4"
-              >
-                Follow on Twitter
-              </SocialLink> */}
               <SocialLink href="mailto:tinga@zamspace.com" icon={MailIcon} className="mt-4">
                 tinga@zamspace.com
               </SocialLink>
