@@ -50,32 +50,63 @@ export default function AdminPage() {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
         };
-        
+
         checkMobile();
         window.addEventListener('resize', checkMobile);
-        
+
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
     // Stats calculations
+    // const stats = {
+    //     total: registrations.length,
+    //     today: registrations.filter(r => {
+    //         const today = new Date();
+    //         const regDate = new Date(r.created_at);
+    //         return regDate.toDateString() === today.toDateString();
+    //     }).length,
+    //     thisWeek: registrations.filter(r => {
+    //         const oneWeekAgo = new Date();
+    //         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    //         return new Date(r.created_at) > oneWeekAgo;
+    //     }).length,
+    //     byType: {
+    //         individual: registrations.filter(r => r.user_type === 'individual').length,
+    //         professional: registrations.filter(r => r.user_type === 'professional').length,
+    //         provider: registrations.filter(r => r.user_type === 'provider').length,
+    //     }
+    // };
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    startOfWeek.setHours(0, 0, 0, 0);
+
     const stats = {
         total: registrations.length,
+
         today: registrations.filter(r => {
-            const today = new Date();
-            const regDate = new Date(r.created_at);
-            return regDate.toDateString() === today.toDateString();
+            const d = new Date(r.created_at);
+            return d >= startOfToday && d <= endOfToday;
         }).length,
-        thisWeek: registrations.filter(r => {
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-            return new Date(r.created_at) > oneWeekAgo;
-        }).length,
+
+        thisWeek: registrations.filter(r =>
+            new Date(r.created_at) >= startOfWeek
+        ).length,
+
         byType: {
             individual: registrations.filter(r => r.user_type === 'individual').length,
             professional: registrations.filter(r => r.user_type === 'professional').length,
             provider: registrations.filter(r => r.user_type === 'provider').length,
         }
     };
+
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
