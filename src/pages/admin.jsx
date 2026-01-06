@@ -159,25 +159,54 @@ export default function AdminPage() {
         }
     };
 
+    // const fetchRegistrations = async () => {
+    //     setLoading(true);
+    //     setError('');
+
+    //     try {
+    //         const { data, error } = await supabase
+    //             .from('waiting_list')
+    //             .select('*')
+    //             .order('created_at', { ascending: false });
+
+    //         if (error) throw error;
+
+
+
+    //         setRegistrations(data || []);
+    //         setFilteredRegistrations(data || []);
+    //     } catch (err) {
+    //         console.error('Error fetching data:', err);
+    //         setError('Failed to load registrations: ' + err.message);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
     const fetchRegistrations = async () => {
         setLoading(true);
         setError('');
 
         try {
-            // const { data, error } = await supabase
-            //     .from('waiting_list')
-            //     .select('*')
-            //     .order('created_at', { ascending: false });
-
-            const { data, count, error } = await supabase
+            // First get the total count
+            const { count: totalCount, error: countError } = await supabase
                 .from('waiting_list')
-                .select('*', { count: 'exact' })
-                .order('created_at', { ascending: false });
+                .select('*', { count: 'exact', head: true });
 
+            if (countError) throw countError;
+
+            console.log('Total registrations in database:', totalCount);
+
+            // Fetch all data with a single query using a large limit
+            const { data, error } = await supabase
+                .from('waiting_list')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(totalCount || 5000); // Set limit to the total count
 
             if (error) throw error;
 
-        
+            console.log('Fetched registrations:', data?.length || 0);
 
             setRegistrations(data || []);
             setFilteredRegistrations(data || []);
@@ -725,7 +754,7 @@ export default function AdminPage() {
                                     <FiUsers className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                                 </div>
                                 <div>
-                                    <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">ZamSpace Waiting List</h1>
+                                    <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">ZamSpace Waiting Lists</h1>
                                     <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Manage your waiting list registrations</p>
                                 </div>
                             </div>
