@@ -42,6 +42,8 @@ export default function AdminPage() {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const router = useRouter();
+    const [totalCount, setTotalCount] = useState(0);
+
 
     const SESSION_TIMEOUT = 30 * 60 * 1000;
 
@@ -88,7 +90,8 @@ export default function AdminPage() {
     startOfWeek.setHours(0, 0, 0, 0);
 
     const stats = {
-        total: registrations.length,
+        // total: registrations.length,
+        total: totalCount,
 
         today: registrations.filter(r => {
             const d = new Date(r.created_at);
@@ -188,25 +191,16 @@ export default function AdminPage() {
         setError('');
 
         try {
-            // First get the total count
-            const { count: totalCount, error: countError } = await supabase
-                .from('waiting_list')
-                .select('*', { count: 'exact', head: true });
+            // Fetch count first
+            await fetchTotalCount();
 
-            if (countError) throw countError;
-
-            console.log('Total registrations in database:', totalCount);
-
-            // Fetch all data with a single query using a large limit
+            // Then fetch the registration data (still limited to 1000)
             const { data, error } = await supabase
                 .from('waiting_list')
                 .select('*')
-                .order('created_at', { ascending: false })
-                .limit(totalCount || 5000); // Set limit to the total count
+                .order('created_at', { ascending: false });
 
             if (error) throw error;
-
-            console.log('Fetched registrations:', data?.length || 0);
 
             setRegistrations(data || []);
             setFilteredRegistrations(data || []);
@@ -217,6 +211,25 @@ export default function AdminPage() {
             setLoading(false);
         }
     };
+
+    const fetchTotalCount = async () => {
+        try {
+            const { count, error } = await supabase
+                .from('waiting_list')
+                .select('*', { count: 'exact', head: true });
+
+            if (error) throw error;
+
+            setTotalCount(count || 0);
+            console.log('Total count fetched:', count);
+        } catch (err) {
+            console.error('Error fetching count:', err);
+            // Don't show error to user, just log it
+        }
+    };
+
+
+
 
     // Session management
     useEffect(() => {
