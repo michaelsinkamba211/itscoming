@@ -932,7 +932,7 @@ export default function AdminPage() {
                                 </div>
                             </div>
 
-                            <div className="hidden lg:flex items-center justify-between text-sm text-gray-600">
+                            {/* <div className="hidden lg:flex items-center justify-between text-sm text-gray-600">
                                 <div>
                                     Showing {startIndex + 1} to {Math.min(endIndex, filteredRegistrations.length)} of{' '}
                                     {filteredRegistrations.length} registrations
@@ -942,7 +942,7 @@ export default function AdminPage() {
                                     <span className="text-gray-500">Results:</span>
                                     <span className="font-medium">{filteredRegistrations.length}</span>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
 
@@ -951,9 +951,9 @@ export default function AdminPage() {
                         <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-5 border-b border-gray-200">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
                                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">All Registrations</h2>
-                                <div className="text-xs sm:text-sm text-gray-600">
+                                {/* <div className="text-xs sm:text-sm text-gray-600">
                                     {loading ? 'Updating...' : `${filteredRegistrations.length} registrations`}
-                                </div>
+                                </div> */}
                             </div>
                         </div>
 
