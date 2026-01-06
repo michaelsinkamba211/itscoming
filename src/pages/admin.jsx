@@ -164,12 +164,20 @@ export default function AdminPage() {
         setError('');
 
         try {
-            const { data, error } = await supabase
+            // const { data, error } = await supabase
+            //     .from('waiting_list')
+            //     .select('*')
+            //     .order('created_at', { ascending: false });
+
+            const { data, count, error } = await supabase
                 .from('waiting_list')
-                .select('*')
+                .select('*', { count: 'exact' })
                 .order('created_at', { ascending: false });
 
+
             if (error) throw error;
+
+        
 
             setRegistrations(data || []);
             setFilteredRegistrations(data || []);
