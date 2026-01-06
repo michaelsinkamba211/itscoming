@@ -767,7 +767,7 @@ export default function AdminPage() {
                                     <FiUsers className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                                 </div>
                                 <div>
-                                    <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">ZamSpace Waiting Lists</h1>
+                                    <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">ZamSpace Waiting List</h1>
                                     <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Manage your waiting list registrations</p>
                                 </div>
                             </div>
